@@ -1,4 +1,4 @@
-import React, {Component, useState, useEffect} from 'react';
+import React, {useState, useEffect} from 'react';
 import ReactDOM from 'react-dom';
 
 const App = () => {
@@ -12,9 +12,8 @@ const App = () => {
                         <button onClick={() => setValue((v) => v + 1)}>
                             +
                         </button>
-
-                        <ClassCounter value={value}/>
-                        <HookCounter value={value}/>
+                        {/*<HookCounter value={value}/>*/}
+                        <Notification/>
                     </div>
                 )
             }
@@ -25,30 +24,29 @@ const App = () => {
     )
 };
 
-const HookCounter = ({value}) => {
+const HookCounter = ({ value }) => {
     useEffect(() => {
-        console.log('UseEffect');
-        return () => console.log('clear');
-    },[ value ]);
+        console.log('Component did mount');
+        return () => console.log('Component did unmount');
+    }, []);
+    useEffect(() => console.log('Component did update'));
+    useEffect(() => () => console.log('Component did unmount'), []);
     return <p> {value} </p>
 };
 
-class ClassCounter extends Component {
-    componentDidMount(){
-        console.log('Class: mount');
-    }
-
-    componentDidUpdate(props) {
-        console.log('Class: update');
-    }
-
-    componentWillUnmount(){
-        console.log('Class: unmount');
-    }
-
-    render(){
-        return <p>{this.props.value}</p>
-    }
-}
+const Notification = () => {
+    const [visible, setVisible] = useState(true);
+    useEffect(() => {
+        const timeout  = setTimeout(
+            () => setVisible(false),
+            2500);
+        return () => clearTimeout(timeout)
+    }, []);
+    return(
+        visible&&(
+            <div><p>Hello</p></div>
+        )
+    );
+};
 
 ReactDOM.render(<App/>, document.getElementById('root'));
