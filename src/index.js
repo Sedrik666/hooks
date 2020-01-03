@@ -1,4 +1,4 @@
-import React, {useState, useEffect} from 'react';
+import React, {useState, useEffect, useCallback, useMemo} from 'react';
 import ReactDOM from 'react-dom';
 
 const App = () => {
@@ -23,28 +23,66 @@ const App = () => {
     )
 };
 
-const usePlanetInfo = (id) => {
-    const [planetName, getName] = useState('')
-
-    useEffect(() => {
-        let cancelled = false;
+const getPlanet = (id) => {
+    return (
         fetch(`https://swapi.co/api/planets/${id}`)
             .then(res => res.json())
-            .then(data => !cancelled && getName(data.name));
-        return () => cancelled = true;
-    },[id]);
+            .then(data => data)
+    );
+};
 
-    return planetName
-}
+const useRequest = (request) => {
+    const initialState = useMemo(() => ({
+        data: null,
+        loading: true,
+        error: null
+    }), []);
+    const [dataState, setDataState] = useState(initialState);
+
+    useEffect(() => {
+        setDataState(initialState);
+
+        let cancelled = false;
+        request()
+            .then(data => !cancelled && setDataState({
+                data,
+                loading: false,
+                error: null
+            }))
+            .catch((error) => {
+                setDataState({
+                    data: null,
+                    loading: false,
+                    error
+                })
+            });
+        return () => cancelled = true;
+    },[ request, initialState ]);
+
+    return dataState
+};
+
+const usePlanetInfo = (id) => {
+   const request = useCallback(() => getPlanet(id), [id]);
+   return useRequest(request);
+};
 
 const PlanetInfo = ({id}) => {
-    const name = usePlanetInfo(id);
+    const {data, loading, error} = usePlanetInfo(id);
+
+    if(error){
+        return <div>Something is wrong</div>
+    }
+
+    if(loading){
+        return <div>Loading...</div>
+    }
 
     return(
         <div>
-            {id} - {name}
+            {id} - {data&&data.name}
         </div>
     );
-}
+};
 
 ReactDOM.render(<App/>, document.getElementById('root'));
